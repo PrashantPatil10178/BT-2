@@ -199,6 +199,34 @@
         color: var(--accent-hover);
       }
 
+      /* Connected wallet button state */
+      button.connected {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        position: relative;
+        padding-left: 32px;
+      }
+
+      button.connected::before {
+        content: "🟢";
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+      }
+
+      button.connected:hover {
+        background: linear-gradient(
+          135deg,
+          #764ba2 0%,
+          #667eea 100%
+        ) !important;
+      }
+
       /* Inputs */
       input[type="text"],
       select,
@@ -875,6 +903,7 @@
         let provider;
         let signer;
         let contract;
+        let isConnected = false;
 
         async function setStatus(msg, type = "idle") {
           // Update status text
@@ -889,6 +918,12 @@
         }
 
         async function connectWallet() {
+          // If already connected, disconnect
+          if (isConnected) {
+            disconnectWallet();
+            return;
+          }
+
           if (!window.ethereum) {
             setStatus("No wallet found. Install MetaMask.", "error");
             return;
@@ -906,18 +941,56 @@
               network.name + " (" + network.chainId + ")";
 
             // Update connect button
+            const connectBtn = document.getElementById("connectBtn");
             const connectBtnText = document.getElementById("connectBtnText");
             if (connectBtnText) {
               connectBtnText.textContent =
                 address.substring(0, 6) + "..." + address.substring(38);
             }
+            if (connectBtn) {
+              connectBtn.classList.add("connected");
+              connectBtn.style.background =
+                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+            }
 
+            isConnected = true;
             setStatus("Wallet connected successfully", "success");
             initContract();
           } catch (err) {
             console.error(err);
             setStatus("User rejected connection or error", "error");
           }
+        }
+
+        function disconnectWallet() {
+          // Reset connection state
+          provider = null;
+          signer = null;
+          contract = null;
+          isConnected = false;
+
+          // Reset UI
+          const connectBtn = document.getElementById("connectBtn");
+          const connectBtnText = document.getElementById("connectBtnText");
+
+          if (connectBtnText) {
+            connectBtnText.textContent = "Connect Wallet";
+          }
+          if (connectBtn) {
+            connectBtn.classList.remove("connected");
+            connectBtn.style.background = "";
+          }
+
+          networkNameEl.textContent = "Not Connected";
+
+          // Clear stats
+          const totalWavesCount = document.getElementById("totalWavesCount");
+          const uniqueWavers = document.getElementById("uniqueWavers");
+          if (totalWavesCount) totalWavesCount.textContent = "0";
+          if (uniqueWavers) uniqueWavers.textContent = "0";
+
+          setStatus("Wallet disconnected", "idle");
+          console.log("Wallet disconnected");
         }
 
         function initContract() {

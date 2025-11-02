@@ -5,38 +5,47 @@ A decentralized message board built with Solidity and Hardhat where users can se
 ## Quick Start Commands
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Compile Smart Contracts
+
 ```bash
 npx hardhat compile
 ```
 
 ### 3. Start Local Hardhat Node
+
 ```bash
 npx hardhat node
 ```
+
 Keep this terminal running.
 
 ### 4. Deploy Contract (in a new terminal)
+
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
 ### 5. Test the Contract
+
 ```bash
 npx hardhat run scripts/test-contract.js --network localhost
 ```
 
 ### 6. Start Web Server (in a new terminal)
+
 ```bash
 python3 -m http.server 8000
 ```
 
 ### 7. Open the UI
+
 Open your browser and navigate to:
+
 ```
 http://localhost:8000
 ```
@@ -44,36 +53,43 @@ http://localhost:8000
 ## All npx Hardhat Commands
 
 ### Compile Contracts
+
 ```bash
 npx hardhat compile
 ```
 
 ### Run Local Node
+
 ```bash
 npx hardhat node
 ```
 
 ### Deploy to Localhost
+
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
 ### Run Tests
+
 ```bash
 npx hardhat test
 ```
 
 ### Clean Build Artifacts
+
 ```bash
 npx hardhat clean
 ```
 
 ### Get Hardhat Help
+
 ```bash
 npx hardhat help
 ```
 
 ### Run Custom Script
+
 ```bash
 npx hardhat run scripts/test-contract.js --network localhost
 ```
@@ -95,6 +111,7 @@ npx hardhat run scripts/test-contract.js --network localhost
 
 1. Open MetaMask
 2. Add Network Manually:
+
    - **Network Name**: Hardhat Local
    - **RPC URL**: `http://127.0.0.1:8545`
    - **Chain ID**: `31337`
@@ -138,13 +155,16 @@ hardhat-demo/
 ## Troubleshooting
 
 ### Contract Not Found
+
 Make sure the Hardhat node is running and the contract is deployed.
 
 ### MetaMask Connection Issues
+
 - Ensure you're on the correct network (Chain ID 31337)
 - Try resetting your MetaMask account (Settings > Advanced > Reset Account)
 
 ### Transaction Failures
+
 - Check if you have enough ETH in your test account
 - Verify the contract address in `index.html` matches the deployed address
 
