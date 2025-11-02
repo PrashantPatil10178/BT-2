@@ -579,7 +579,7 @@
           <input
             id="contractAddress"
             type="text"
-            value="0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+            value="0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
             placeholder="0x..."
           />
         </div>
@@ -673,7 +673,10 @@
             const art = await res.json();
             if (!art.abi) throw new Error("No ABI found in artifact");
             ABI = art.abi;
-            setStatus("Artifact loaded: " + (art.contractName || path), "success");
+            setStatus(
+              "Artifact loaded: " + (art.contractName || path),
+              "success"
+            );
 
             // regenerate view functions UI
             generateViewUI(ABI);
@@ -879,7 +882,7 @@
           if (statusText) {
             statusText.textContent = msg;
           }
-          
+
           // Update status classes (idle, loading, success, error)
           statusEl.className = "status " + type;
           console.log(msg);
@@ -897,16 +900,18 @@
             signer = await provider.getSigner();
             const network = await provider.getNetwork();
             const address = await signer.getAddress();
-            
+
             // Update network badge
-            networkNameEl.textContent = network.name + " (" + network.chainId + ")";
-            
+            networkNameEl.textContent =
+              network.name + " (" + network.chainId + ")";
+
             // Update connect button
             const connectBtnText = document.getElementById("connectBtnText");
             if (connectBtnText) {
-              connectBtnText.textContent = address.substring(0, 6) + "..." + address.substring(38);
+              connectBtnText.textContent =
+                address.substring(0, 6) + "..." + address.substring(38);
             }
-            
+
             setStatus("Wallet connected successfully", "success");
             initContract();
           } catch (err) {
@@ -918,7 +923,10 @@
         function initContract() {
           const addr = contractAddressInput.value.trim();
           if (!addr || addr === "CONTRACT_ADDRESS") {
-            setStatus("Please set CONTRACT_ADDRESS (replace placeholder).", "error");
+            setStatus(
+              "Please set CONTRACT_ADDRESS (replace placeholder).",
+              "error"
+            );
             return;
           }
           try {
@@ -957,13 +965,16 @@
           li.className = "wave-item";
           li.innerHTML = `
             <div class="wave-header">
-              <span class="wave-address">${wave.waver.substring(0, 6)}...${wave.waver.substring(38)}</span>
+              <span class="wave-address">${wave.waver.substring(
+                0,
+                6
+              )}...${wave.waver.substring(38)}</span>
               <span class="wave-time">${formatTimestamp(wave.timestamp)}</span>
             </div>
             <div class="wave-message">${escapeHtml(wave.message)}</div>
           `;
           // Clear "no waves" message if present
-          if (wavesList.querySelector('.text-center')) {
+          if (wavesList.querySelector(".text-center")) {
             wavesList.innerHTML = "";
           }
           // Add newest first
@@ -981,20 +992,26 @@
 
         async function sendWave() {
           if (!contract) {
-            setStatus("Contract not initialized. Connect wallet and set address.", "error");
+            setStatus(
+              "Contract not initialized. Connect wallet and set address.",
+              "error"
+            );
             return;
           }
           const msg = document.getElementById("message").value || "Hello!";
           try {
             setStatus("Sending transaction...", "loading");
             const tx = await contract.wave(msg);
-            setStatus("Transaction submitted. Waiting for confirmation...", "loading");
+            setStatus(
+              "Transaction submitted. Waiting for confirmation...",
+              "loading"
+            );
             await tx.wait();
             setStatus("Wave sent and mined ✅", "success");
-            
+
             // Clear message input
             document.getElementById("message").value = "";
-            
+
             // Update total and list
             await getTotalWaves();
             await getAllWaves();
@@ -1011,13 +1028,13 @@
           }
           try {
             const count = await contract.getTotalWaves();
-            
+
             // Update the stats counter
             const totalWavesCount = document.getElementById("totalWavesCount");
             if (totalWavesCount) {
               totalWavesCount.textContent = String(count);
             }
-            
+
             setStatus("Fetched total waves", "success");
             return count;
           } catch (err) {
@@ -1034,10 +1051,10 @@
           try {
             setStatus("Fetching all waves...", "loading");
             const all = await contract.getAllWaves();
-            
+
             // Clear list
             wavesList.innerHTML = "";
-            
+
             if (all.length === 0) {
               wavesList.innerHTML = `
                 <li class="text-center" style="color: var(--text-muted); padding: 40px 20px">
@@ -1054,15 +1071,15 @@
                   timestamp: Number(w.timestamp ?? w[2]),
                 });
               }
-              
+
               // Calculate unique wavers
-              const uniqueWaversSet = new Set(all.map(w => w.waver || w[0]));
+              const uniqueWaversSet = new Set(all.map((w) => w.waver || w[0]));
               const uniqueWaversEl = document.getElementById("uniqueWavers");
               if (uniqueWaversEl) {
                 uniqueWaversEl.textContent = String(uniqueWaversSet.size);
               }
             }
-            
+
             setStatus("All waves loaded", "success");
           } catch (err) {
             console.error(err);
