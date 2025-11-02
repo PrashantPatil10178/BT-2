@@ -344,6 +344,7 @@
         font-size: 0.85rem;
         font-weight: 500;
         color: var(--accent);
+        transition: all 0.3s ease;
       }
 
       .network-badge::before {
@@ -353,6 +354,18 @@
         background: var(--success);
         border-radius: 50%;
         animation: pulse 2s infinite;
+      }
+
+      /* Disconnected network badge state */
+      .network-badge.disconnected {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-muted);
+      }
+
+      .network-badge.disconnected::before {
+        background: var(--text-muted);
+        animation: none;
       }
 
       /* Waves list */
@@ -581,8 +594,39 @@
           <button id="connectBtn">
             <span id="connectBtnText">Connect Wallet</span>
           </button>
+          <button id="switchNetworkBtn" class="secondary" style="display: none">
+            🔄 Switch Network
+          </button>
           <div style="margin-left: auto" class="network-badge">
             <span id="networkName">Not Connected</span>
+          </div>
+        </div>
+
+        <!-- Network Selector (hidden by default) -->
+        <div
+          id="networkSelector"
+          style="
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+          "
+        >
+          <label for="networkSelect">Select Network to Switch</label>
+          <select id="networkSelect" style="margin-top: 8px">
+            <option value="">-- Select Network --</option>
+            <option value="hardhat">Hardhat Local (31337)</option>
+            <option value="sepolia">Sepolia Testnet (11155111)</option>
+            <option value="mainnet">Ethereum Mainnet (1)</option>
+            <option value="goerli">Goerli Testnet (5)</option>
+            <option value="polygon">Polygon Mainnet (137)</option>
+            <option value="mumbai">Polygon Mumbai (80001)</option>
+          </select>
+          <div class="row" style="margin-top: 12px">
+            <button id="confirmSwitchBtn" class="secondary">
+              ✓ Confirm Switch
+            </button>
+            <button id="cancelSwitchBtn" class="secondary">✕ Cancel</button>
           </div>
         </div>
       </div>
@@ -905,6 +949,75 @@
         let contract;
         let isConnected = false;
 
+        // Network configurations
+        const NETWORKS = {
+          hardhat: {
+            chainId: "0x7a69", // 31337 in hex
+            chainName: "Hardhat Local",
+            rpcUrls: ["http://127.0.0.1:8545"],
+            nativeCurrency: {
+              name: "ETH",
+              symbol: "ETH",
+              decimals: 18,
+            },
+          },
+          sepolia: {
+            chainId: "0xaa36a7", // 11155111 in hex
+            chainName: "Sepolia Testnet",
+            rpcUrls: ["https://rpc.sepolia.org"],
+            nativeCurrency: {
+              name: "ETH",
+              symbol: "ETH",
+              decimals: 18,
+            },
+            blockExplorerUrls: ["https://sepolia.etherscan.io"],
+          },
+          mainnet: {
+            chainId: "0x1", // 1 in hex
+            chainName: "Ethereum Mainnet",
+            rpcUrls: ["https://eth.llamarpc.com"],
+            nativeCurrency: {
+              name: "ETH",
+              symbol: "ETH",
+              decimals: 18,
+            },
+            blockExplorerUrls: ["https://etherscan.io"],
+          },
+          goerli: {
+            chainId: "0x5", // 5 in hex
+            chainName: "Goerli Testnet",
+            rpcUrls: ["https://rpc.ankr.com/eth_goerli"],
+            nativeCurrency: {
+              name: "ETH",
+              symbol: "ETH",
+              decimals: 18,
+            },
+            blockExplorerUrls: ["https://goerli.etherscan.io"],
+          },
+          polygon: {
+            chainId: "0x89", // 137 in hex
+            chainName: "Polygon Mainnet",
+            rpcUrls: ["https://polygon-rpc.com"],
+            nativeCurrency: {
+              name: "MATIC",
+              symbol: "MATIC",
+              decimals: 18,
+            },
+            blockExplorerUrls: ["https://polygonscan.com"],
+          },
+          mumbai: {
+            chainId: "0x13881", // 80001 in hex
+            chainName: "Polygon Mumbai",
+            rpcUrls: ["https://rpc-mumbai.maticvigil.com"],
+            nativeCurrency: {
+              name: "MATIC",
+              symbol: "MATIC",
+              decimals: 18,
+            },
+            blockExplorerUrls: ["https://mumbai.polygonscan.com"],
+          },
+        };
+
         async function setStatus(msg, type = "idle") {
           // Update status text
           const statusText = document.getElementById("statusText");
@@ -937,8 +1050,22 @@
             const address = await signer.getAddress();
 
             // Update network badge
+            const networkBadge = networkNameEl.parentElement;
+            if (
+              networkBadge &&
+              networkBadge.classList.contains("network-badge")
+            ) {
+              networkBadge.classList.remove("disconnected");
+            }
+
+            // Display network name (replace "unknown" with "Hardhat Local" for chain 31337)
+            let displayName = network.name;
+            if (network.chainId.toString() === "31337") {
+              displayName = "Hardhat Local";
+            }
             networkNameEl.textContent =
-              network.name + " (" + network.chainId + ")";
+              displayName + " (" + network.chainId + ")";
+            networkNameEl.style.color = "";
 
             // Update connect button
             const connectBtn = document.getElementById("connectBtn");
@@ -951,6 +1078,13 @@
               connectBtn.classList.add("connected");
               connectBtn.style.background =
                 "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+            }
+
+            // Show switch network button
+            const switchNetworkBtn =
+              document.getElementById("switchNetworkBtn");
+            if (switchNetworkBtn) {
+              switchNetworkBtn.style.display = "inline-block";
             }
 
             isConnected = true;
@@ -981,7 +1115,21 @@
             connectBtn.style.background = "";
           }
 
-          networkNameEl.textContent = "Not Connected";
+          // Reset network badge to Not Connected
+          const networkNameEl = document.getElementById("networkName");
+          if (networkNameEl) {
+            networkNameEl.textContent = "Not Connected";
+            networkNameEl.style.color = "";
+
+            // Add disconnected class to parent badge
+            const networkBadge = networkNameEl.parentElement;
+            if (
+              networkBadge &&
+              networkBadge.classList.contains("network-badge")
+            ) {
+              networkBadge.classList.add("disconnected");
+            }
+          }
 
           // Clear stats
           const totalWavesCount = document.getElementById("totalWavesCount");
@@ -989,8 +1137,133 @@
           if (totalWavesCount) totalWavesCount.textContent = "0";
           if (uniqueWavers) uniqueWavers.textContent = "0";
 
-          setStatus("Wallet disconnected", "idle");
-          console.log("Wallet disconnected");
+          // Clear waves list
+          const wavesList = document.getElementById("wavesList");
+          if (wavesList) {
+            wavesList.innerHTML = `
+              <li class="text-center" style="color: var(--text-muted); padding: 40px 20px">
+                No waves yet. Be the first to send one! 🌊
+              </li>
+            `;
+          }
+
+          setStatus("Wallet disconnected - Please connect to continue", "idle");
+          console.log("Wallet disconnected - all state cleared");
+
+          // Hide switch network button
+          const switchNetworkBtn = document.getElementById("switchNetworkBtn");
+          if (switchNetworkBtn) {
+            switchNetworkBtn.style.display = "none";
+          }
+        }
+
+        async function switchNetwork(networkKey) {
+          if (!window.ethereum) {
+            setStatus("No wallet found. Install MetaMask.", "error");
+            return;
+          }
+
+          const networkConfig = NETWORKS[networkKey];
+          if (!networkConfig) {
+            setStatus("Invalid network selected", "error");
+            return;
+          }
+
+          try {
+            setStatus(`Switching to ${networkConfig.chainName}...`, "loading");
+
+            // Try to switch to the network
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: networkConfig.chainId }],
+            });
+
+            setStatus(`Switched to ${networkConfig.chainName}`, "success");
+
+            // Refresh the connection to update network info
+            if (isConnected) {
+              await updateNetworkInfo();
+            }
+          } catch (switchError) {
+            // This error code indicates that the chain has not been added to MetaMask
+            if (switchError.code === 4902) {
+              try {
+                setStatus(
+                  `Adding ${networkConfig.chainName} to MetaMask...`,
+                  "loading"
+                );
+                await window.ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [networkConfig],
+                });
+                setStatus(
+                  `Added and switched to ${networkConfig.chainName}`,
+                  "success"
+                );
+
+                if (isConnected) {
+                  await updateNetworkInfo();
+                }
+              } catch (addError) {
+                console.error(addError);
+                setStatus("Failed to add network", "error");
+              }
+            } else {
+              console.error(switchError);
+              setStatus("Failed to switch network", "error");
+            }
+          }
+        }
+
+        async function updateNetworkInfo() {
+          if (!provider) return;
+
+          try {
+            const network = await provider.getNetwork();
+            const networkNameEl = document.getElementById("networkName");
+            const networkBadge = networkNameEl.parentElement;
+
+            if (
+              networkBadge &&
+              networkBadge.classList.contains("network-badge")
+            ) {
+              networkBadge.classList.remove("disconnected");
+            }
+
+            // Display network name (replace "unknown" with "Hardhat Local" for chain 31337)
+            let displayName = network.name;
+            if (network.chainId.toString() === "31337") {
+              displayName = "Hardhat Local";
+            }
+            networkNameEl.textContent =
+              displayName + " (" + network.chainId + ")";
+            networkNameEl.style.color = "";
+
+            // Reinitialize contract if needed
+            if (contract) {
+              initContract();
+            }
+          } catch (err) {
+            console.error("Failed to update network info:", err);
+          }
+        }
+
+        function showNetworkSelector() {
+          const networkSelector = document.getElementById("networkSelector");
+          if (networkSelector) {
+            networkSelector.style.display = "block";
+          }
+        }
+
+        function hideNetworkSelector() {
+          const networkSelector = document.getElementById("networkSelector");
+          const networkSelect = document.getElementById("networkSelect");
+          if (networkSelector) {
+            networkSelector.style.display = "none";
+          }
+          if (networkSelect) {
+            networkSelect.value = "";
+          }
         }
 
         function initContract() {
@@ -1171,6 +1444,30 @@
         document
           .getElementById("contractAddress")
           .addEventListener("blur", initContract);
+
+        // Network switcher UI wiring
+        const switchNetworkBtn = document.getElementById("switchNetworkBtn");
+        const confirmSwitchBtn = document.getElementById("confirmSwitchBtn");
+        const cancelSwitchBtn = document.getElementById("cancelSwitchBtn");
+        const networkSelect = document.getElementById("networkSelect");
+
+        switchNetworkBtn.addEventListener("click", () => {
+          showNetworkSelector();
+        });
+
+        confirmSwitchBtn.addEventListener("click", async () => {
+          const selectedNetwork = networkSelect.value;
+          if (!selectedNetwork) {
+            setStatus("Please select a network", "error");
+            return;
+          }
+          await switchNetwork(selectedNetwork);
+          hideNetworkSelector();
+        });
+
+        cancelSwitchBtn.addEventListener("click", () => {
+          hideNetworkSelector();
+        });
 
         // artifact UI wiring
         const artifactSelect = document.getElementById("artifactSelect");
