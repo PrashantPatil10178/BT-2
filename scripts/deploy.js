@@ -1,11 +1,13 @@
 const hre = require("hardhat");
 
 async function main() {
-  const MyContract = await hre.ethers.getContractFactory("MyContract");
-  const myContract = await MyContract.deploy("Hello, Hardhat!");
+  const WavePortal = await hre.ethers.getContractFactory("WavePortal");
+  const wavePortal = await WavePortal.deploy();
 
-  await myContract.waitForDeployment();
-  console.log(`Contract deployed to: ${await myContract.getAddress()}`);
+  await wavePortal.waitForDeployment();
+
+  const address = await wavePortal.getAddress();
+  console.log(`WavePortal deployed to: ${address}`);
 }
 
 main().catch((error) => {
